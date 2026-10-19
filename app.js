@@ -108,7 +108,7 @@ function celebrate() {
   for (let i = 0; i < 34; i++) {
     const piece = document.createElement('span');
     piece.className = 'confetti';
-    piece.textContent = ['♡', '✦', '✧', '🥕', '💖'][i % 5];
+    piece.innerHTML = ['♡', '<svg class="decor-icon decor-icon-solid" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" focusable="false"><path d="M12 1c1.6 7.3 3.7 9.4 11 11-7.3 1.6-9.4 3.7-11 11C10.4 15.7 8.3 13.6 1 12 8.3 10.4 10.4 8.3 12 1Z"/></svg>', '<svg class="decor-icon" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" focusable="false"><path d="M12 2C13.4 8.6 15.4 10.6 22 12c-6.6 1.4-8.6 3.4-10 10C10.6 15.4 8.6 13.4 2 12c6.6-1.4 8.6-3.4 10-10Z"/></svg>', '🥕', '💖'][i % 5];
     piece.style.left = Math.random() * 100 + '%';
     piece.style.color = ['#f8f3b5', '#ec6d9b', '#7152b5', '#d1f372'][i % 4];
     piece.style.setProperty('--drift', (Math.random() - .5) * 130 + 'px');
@@ -124,7 +124,7 @@ function resetCake() {
   blown = false;
   cake.classList.remove('blown');
   cake.setAttribute('aria-label', 'Розовый торт с тремя горящими свечами');
-  blow.innerHTML = 'Задуть свечи <span>✧</span>';
+  blow.innerHTML = 'Задуть свечи <span><svg class="decor-icon" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" focusable="false"><path d="M12 2C13.4 8.6 15.4 10.6 22 12c-6.6 1.4-8.6 3.4-10 10C10.6 15.4 8.6 13.4 2 12c6.6-1.4 8.6-3.4 10-10Z"/></svg></span>';
   document.getElementById('wish-status').textContent = 'Вдох. Выдох. И пусть сбывается.';
 }
 blow.addEventListener('click', () => {
