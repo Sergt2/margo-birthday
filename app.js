@@ -7,7 +7,7 @@ const prev = document.getElementById('prev');
 const story = document.querySelector('.story');
 const dialog = document.getElementById('letter-dialog');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const nextLabels = ['Это моя волна', 'А дальше что?', 'Звучит как я', 'Хочу дальше', 'Где мой торт?', 'И ещё кое-что', 'Последний сюрприз', 'Ещё раз с самого начала'];
+const nextLabels = ['Это моя волна', 'А дальше что?', 'Звучит как я', 'Хочу дальше', 'Где мой торт?', 'И ещё кое-что', 'А теперь — письмо', 'Последний сюрприз', 'Ещё раз с самого начала'];
 let current = 0;
 let statsFrame;
 const format = number => Math.round(number).toLocaleString('ru-RU');
@@ -31,7 +31,8 @@ function animateStats() {
   statsFrame = requestAnimationFrame(tick);
 }
 function go(index) {
-  if (index < 0 || index >= scenes.length || dialog.open) return;
+  if (index < 0 || index >= scenes.length || document.querySelector('dialog[open]')) return;
+  if (scenes[index].dataset.label !== 'Селфи на память') stopCamera();
   current = index;
   scenes.forEach((scene, i) => {
     scene.classList.toggle('active', i === index);
@@ -44,18 +45,18 @@ function go(index) {
   prev.disabled = index === 0;
   document.getElementById('next-text').textContent = nextLabels[index];
   document.getElementById('next-arrow').textContent = index === scenes.length - 1 ? '↻' : '↗';
-  document.getElementById('position').textContent = `${String(index + 1).padStart(2, '0')} / 08`;
-  document.getElementById('hint').textContent = index === 0 ? 'ЛИСТАЙ. УЛЫБАЙСЯ. ЭТО ТВОЁ.' : index === 7 ? 'С ЛЮБОВЬЮ. НА ПОВТОРЕ.' : 'СВАЙП ВЛЕВО — ИДЁМ ДАЛЬШЕ';
+  document.getElementById('position').textContent = `${String(index + 1).padStart(2, '0')} / ${String(scenes.length).padStart(2, '0')}`;
+  document.getElementById('hint').textContent = index === 0 ? 'ЛИСТАЙ. УЛЫБАЙСЯ. ЭТО ТВОЁ.' : index === scenes.length - 1 ? 'С ЛЮБОВЬЮ. НА ПОВТОРЕ.' : 'СВАЙП ВЛЕВО — ИДЁМ ДАЛЬШЕ';
   document.querySelector('meta[name=theme-color]').content = scenes[index].dataset.color;
   if (index === 1) animateStats();
   else cancelAnimationFrame(statsFrame);
-  if (index === 7) celebrate();
+  if (index === scenes.length - 1) celebrate();
 }
 next.addEventListener('click', () => { if (current === scenes.length - 1) { resetCake(); go(0); } else go(current + 1); });
 prev.addEventListener('click', () => go(current - 1));
 document.querySelector('.brand').addEventListener('click', e => { e.preventDefault(); go(0); });
 document.addEventListener('keydown', e => {
-  if (dialog.open || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (document.querySelector('dialog[open]') || e.altKey || e.ctrlKey || e.metaKey) return;
   if (e.key === 'ArrowRight') { e.preventDefault(); go(current + 1); }
   if (e.key === 'ArrowLeft') { e.preventDefault(); go(current - 1); }
   if (e.key === 'Home') { e.preventDefault(); go(0); }
@@ -67,7 +68,7 @@ story.addEventListener('touchstart', e => {
   touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
 }, { passive: true });
 story.addEventListener('touchend', e => {
-  if (!touchStart || dialog.open || !e.changedTouches.length) return;
+  if (!touchStart || document.querySelector('dialog[open]') || !e.changedTouches.length) return;
   const dx = e.changedTouches[0].clientX - touchStart.x;
   const dy = e.changedTouches[0].clientY - touchStart.y;
   touchStart = null;
@@ -145,4 +146,109 @@ dialog.addEventListener('click', e => {
   const r = dialog.getBoundingClientRect();
   if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close();
 });
+// Селфи обрабатывается только в браузере и никуда не отправляется.
+const cameraStart = document.getElementById('camera-start');
+const cameraShoot = document.getElementById('camera-shoot');
+const photoFilter = document.getElementById('selfie-filter');
+const photoRetake = document.getElementById('photo-retake');
+const photoSave = document.getElementById('photo-save');
+const video = document.getElementById('selfie-video');
+const photo = document.getElementById('selfie-photo');
+const cameraStatus = document.getElementById('camera-status');
+const filterDialog = document.getElementById('filter-dialog');
+let cameraStream = null;
+let cameraRequest = 0;
+let photoURL = null;
+function updateSelfie() {
+  const live = !!cameraStream;
+  video.hidden = !live;
+  photo.hidden = live || !photoURL;
+  document.querySelector('.selfie-placeholder').hidden = live || !!photoURL;
+  cameraStart.hidden = live || !!photoURL;
+  cameraShoot.hidden = !live;
+  photoFilter.hidden = live || !photoURL;
+  photoSave.hidden = live || !photoURL;
+  photoRetake.hidden = live || !photoURL;
+  cameraStart.disabled = false;
+}
+function stopCamera() {
+  cameraRequest++;
+  if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+  cameraStream = null;
+  video.srcObject = null;
+  updateSelfie();
+}
+async function startCamera() {
+  stopCamera();
+  if (!navigator.mediaDevices?.getUserMedia) {
+    cameraStatus.textContent = 'Камера недоступна. Открой сайт в Safari на iPhone и попробуй ещё раз.';
+    return;
+  }
+  const request = cameraRequest;
+  cameraStart.disabled = true;
+  cameraStatus.textContent = 'Разреши камеру — и поймаем твою улыбку.';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1200},height:{ideal:1600}},audio:false});
+    if (request !== cameraRequest || !document.querySelector('.selfie.active')) { stream.getTracks().forEach(track => track.stop()); return; }
+    cameraStream = stream;
+    video.srcObject = stream;
+    updateSelfie();
+    cameraShoot.disabled = true;
+    await video.play();
+    if (request !== cameraRequest) return;
+    cameraShoot.disabled = false;
+    cameraStatus.textContent = 'Вот она, твоя улыбка. Готова?';
+  } catch (error) {
+    if (request !== cameraRequest) return;
+    stopCamera();
+    cameraStatus.textContent = error.name === 'NotAllowedError' ? 'Разреши доступ к камере в настройках браузера и попробуй ещё раз.' : 'Не получилось открыть камеру. Попробуй ещё раз.';
+  }
+}
+function setPhoto(blob) {
+  if (photoURL) URL.revokeObjectURL(photoURL);
+  photoURL = URL.createObjectURL(blob);
+  photo.src = photoURL;
+  stopCamera();
+  cameraStatus.textContent = 'Есть! А может, попробуем добавить фильтр?';
+}
+cameraStart.addEventListener('click', startCamera);
+photoRetake.addEventListener('click', startCamera);
+cameraShoot.addEventListener('click', () => {
+  if (!video.videoWidth || !cameraStream) return;
+  const canvas = document.createElement('canvas');
+  const ratio = Math.min(1, 1600 / Math.max(video.videoWidth, video.videoHeight));
+  canvas.width = Math.round(video.videoWidth * ratio);
+  canvas.height = Math.round(video.videoHeight * ratio);
+  const ctx = canvas.getContext('2d');
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const request = cameraRequest;
+  cameraShoot.disabled = true;
+  canvas.toBlob(blob => {
+    cameraShoot.disabled = false;
+    if (request !== cameraRequest) return;
+    if (blob) setPhoto(blob);
+    else cameraStatus.textContent = 'Снимок не сохранился. Попробуем ещё раз?';
+  }, 'image/jpeg', .93);
+});
+photoSave.addEventListener('click', () => {
+  if (!photoURL) return;
+  const link = document.createElement('a');
+  link.href = photoURL;
+  link.download = 'margosha-birthday.jpg';
+  document.body.append(link);
+  link.click();
+  link.remove();
+});
+photoFilter.addEventListener('click', () => { if (photoURL) filterDialog.showModal(); });
+document.getElementById('close-filter').addEventListener('click', () => filterDialog.close());
+document.getElementById('filter-done').addEventListener('click', () => filterDialog.close());
+filterDialog.addEventListener('click', e => {
+  if (e.target !== filterDialog) return;
+  const r = filterDialog.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) filterDialog.close();
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopCamera(); });
+window.addEventListener('pagehide', stopCamera);
 go(0);
