@@ -1,5 +1,3 @@
-/* Статистика общения в Telegram. */
-const CHAT_STATS = { messages: 5800, voiceMessages: 355 };
 const scenes = [...document.querySelectorAll('.scene')];
 const progress = document.querySelector('.progress');
 const next = document.getElementById('next');
@@ -7,10 +5,8 @@ const prev = document.getElementById('prev');
 const story = document.querySelector('.story');
 const dialog = document.getElementById('letter-dialog');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const nextLabels = ['Это моя волна', 'А дальше что?', 'Звучит как я', 'Хочу дальше', 'Где мой торт?', 'И ещё кое-что', 'А теперь — письмо', 'Последний сюрприз', 'Ещё раз с самого начала'];
+const nextLabels = ['Начать праздник', 'Дальше — комплименты', 'К пожеланиям', 'Загадать желание', 'Ещё один сюрприз', 'А теперь — письмо', 'К финалу', 'Посмотреть ещё раз'];
 let current = 0;
-let statsFrame;
-const format = number => Math.round(number).toLocaleString('ru-RU');
 const bars = scenes.map((scene, i) => {
   const button = document.createElement('button');
   button.setAttribute('aria-label', `${i + 1}. ${scene.dataset.label}`);
@@ -18,18 +14,6 @@ const bars = scenes.map((scene, i) => {
   progress.append(button);
   return button;
 });
-function animateStats() {
-  cancelAnimationFrame(statsFrame);
-  const start = performance.now();
-  function tick(now) {
-    const fraction = reducedMotion.matches ? 1 : Math.min((now - start) / 950, 1);
-    const eased = 1 - (1 - fraction) ** 3;
-    document.getElementById('messages-count').textContent = format(CHAT_STATS.messages * eased);
-    document.getElementById('voice-count').textContent = format(CHAT_STATS.voiceMessages * eased);
-    if (fraction < 1) statsFrame = requestAnimationFrame(tick);
-  }
-  statsFrame = requestAnimationFrame(tick);
-}
 function go(index) {
   if (index < 0 || index >= scenes.length || document.querySelector('dialog[open]')) return;
   if (scenes[index].dataset.label !== 'Селфи на память') stopCamera();
@@ -48,8 +32,6 @@ function go(index) {
   document.getElementById('position').textContent = `${String(index + 1).padStart(2, '0')} / ${String(scenes.length).padStart(2, '0')}`;
   document.getElementById('hint').textContent = index === 0 ? 'ЛИСТАЙ. УЛЫБАЙСЯ. ЭТО ТВОЁ.' : index === scenes.length - 1 ? 'С ЛЮБОВЬЮ. НА ПОВТОРЕ.' : 'СВАЙП ВЛЕВО — ИДЁМ ДАЛЬШЕ';
   document.querySelector('meta[name=theme-color]').content = scenes[index].dataset.color;
-  if (index === 1) animateStats();
-  else cancelAnimationFrame(statsFrame);
   if (index === scenes.length - 1) celebrate();
 }
 next.addEventListener('click', () => { if (current === scenes.length - 1) { resetCake(); go(0); } else go(current + 1); });
@@ -75,7 +57,7 @@ story.addEventListener('touchend', e => {
   if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.25) go(current + (dx < 0 ? 1 : -1));
 }, { passive: true });
 story.addEventListener('touchcancel', () => { touchStart = null; }, { passive: true });
-const nameDetails = ['Самая сладкая. Даже без сахара.', 'Мелкая — только в прозвище. В сердце — огромная.', 'Имя, от которого становится теплее.'];
+const nameDetails = ['Самая сладкая. Даже без сахара.', 'Мелкая — только в прозвище. Мечты — большие.', 'Имя, от которого становится теплее.'];
 document.querySelectorAll('[data-name]').forEach(button => {
   const small = button.querySelector('small');
   const initial = small.textContent;
@@ -85,7 +67,7 @@ document.querySelectorAll('[data-name]').forEach(button => {
     small.textContent = expanded ? nameDetails[Number(button.dataset.name)] : initial;
   });
 });
-const compliments = ['Мелкая, а сколько в тебе всего прекрасного.', 'Ты как любимая песня. Хочется ещё раз.', 'Морковка, с тобой даже обычный вторник — событие.', 'Твоей улыбке нужен отдельный фан-клуб.', 'Маргоша, ты — причина улыбнуться прямо сейчас.', 'Уровень очарования: игра сломалась.'];
+const compliments = ['Мелкая, а сколько в тебе всего прекрасного.', 'Твоя энергия заряжает лучше любимой песни.', 'Морковка, ты превращаешь будни в праздник.', 'Твоей улыбке нужен отдельный фан-клуб.', 'Маргоша, твоя улыбка — отдельный вид волшебства.', 'Уровень очарования: игра сломалась.'];
 let complimentIndex = 0;
 document.getElementById('another').addEventListener('click', () => {
   complimentIndex = (complimentIndex + 1) % compliments.length;
@@ -186,7 +168,7 @@ async function startCamera() {
   }
   const request = cameraRequest;
   cameraStart.disabled = true;
-  cameraStatus.textContent = 'Разреши камеру — и поймаем твою улыбку.';
+  cameraStatus.textContent = 'Разреши камеру — время для твоей улыбки.';
   try {
     const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1200},height:{ideal:1600}},audio:false});
     if (request !== cameraRequest || !document.querySelector('.selfie.active')) { stream.getTracks().forEach(track => track.stop()); return; }
@@ -209,7 +191,7 @@ function setPhoto(blob) {
   photoURL = URL.createObjectURL(blob);
   photo.src = photoURL;
   stopCamera();
-  cameraStatus.textContent = 'Есть! А может, попробуем добавить фильтр?';
+  cameraStatus.textContent = 'Есть! А может, добавить фильтр?';
 }
 cameraStart.addEventListener('click', startCamera);
 photoRetake.addEventListener('click', startCamera);
@@ -229,7 +211,7 @@ cameraShoot.addEventListener('click', () => {
     cameraShoot.disabled = false;
     if (request !== cameraRequest) return;
     if (blob) setPhoto(blob);
-    else cameraStatus.textContent = 'Снимок не сохранился. Попробуем ещё раз?';
+    else cameraStatus.textContent = 'Снимок не сохранился. Попробуй ещё раз.';
   }, 'image/jpeg', .93);
 });
 photoSave.addEventListener('click', () => {
