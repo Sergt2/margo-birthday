@@ -67,7 +67,16 @@ document.querySelectorAll('[data-name]').forEach(button => {
     small.textContent = expanded ? nameDetails[Number(button.dataset.name)] : initial;
   });
 });
-const compliments = ['Мелкая, а сколько в тебе всего прекрасного.', 'Твоя энергия заряжает лучше любимой песни.', 'Морковка, ты превращаешь будни в праздник.', 'Твоей улыбке нужен отдельный фан-клуб.', 'Маргоша, твоя улыбка — отдельный вид волшебства.', 'Уровень очарования: игра сломалась.'];
+const compliments = [
+  "Марго, у тебя удивительная способность делать даже самые обычные моменты особенными.",
+  "Твоя улыбка — одна из тех вещей, которые способны сделать мой день лучше.",
+  "В тебе невероятно красиво сочетаются нежность, доброта и характер.",
+  "Мне нравится, как ты умеешь оставаться собой, не пытаясь кому-то понравиться.",
+  "В твоих глазах есть что-то такое, от чего мне каждый раз сложно отвести взгляд.",
+  "Ты из тех людей, о которых вспоминаешь совершенно случайно и невольно улыбаешься.",
+  "С тобой даже обычный разговор может стать одним из лучших моментов дня.",
+  "В тебе есть что-то совершенно особенное, что я до сих пор не могу объяснить словами."
+];
 let complimentIndex = 0;
 document.getElementById('another').addEventListener('click', () => {
   complimentIndex = (complimentIndex + 1) % compliments.length;
@@ -76,7 +85,7 @@ document.getElementById('another').addEventListener('click', () => {
   el.classList.remove('switching');
   void el.offsetWidth;
   el.classList.add('switching');
-  document.getElementById('track-number').textContent = `${String(complimentIndex + 1).padStart(2, '0')} / 06`;
+  document.getElementById('track-number').textContent = `${String(complimentIndex + 1).padStart(2, '0')} / ${String(compliments.length).padStart(2, '0')}`;
 });
 const particles = document.createElement('div');
 particles.className = 'confetti-layer';
